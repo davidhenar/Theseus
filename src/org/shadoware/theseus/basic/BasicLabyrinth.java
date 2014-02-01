@@ -31,13 +31,12 @@ public class BasicLabyrinth implements Labyrinth {
 		return build.toArray(new Node[build.size()]);
 	}
 	
-	
 	private void buildNodes(int size) {
 		while (build.size() < size) {
 			try {
-				BasicNode freeNode = getRandomFreeLabyrinthNode();
+				BasicNode randomConnectableNode = getRandomConnectableNode();
 				BasicNode nextNode = new BasicNode();
-				connectNodes(freeNode, nextNode);
+				connectNodes(randomConnectableNode, nextNode);
 				build.add(nextNode);
 			}
 			catch (EmptyLabyrinthException e) {
@@ -48,10 +47,16 @@ public class BasicLabyrinth implements Labyrinth {
 		}	
 	}
 	
-	private BasicNode getRandomFreeLabyrinthNode() throws EmptyLabyrinthException {
-		int randomPosition = getRandomValue(build.size());
+	private BasicNode getRandomConnectableNode() throws EmptyLabyrinthException {
 		try {
-			return build.get(randomPosition);
+			int randomBuildIndex;
+			BasicNode randomNode;
+			do {
+				randomBuildIndex = getRandomValue(build.size());
+				randomNode = build.get(randomBuildIndex);
+			}
+			while (!isConnectable(randomNode));
+			return randomNode;
 		}
 		catch (Exception e) {
 			throw new EmptyLabyrinthException();
@@ -59,43 +64,38 @@ public class BasicLabyrinth implements Labyrinth {
 	}
 	
 	private void connectNodes(BasicNode freeNode, BasicNode nextNode) throws ConnectionException {
-		try {
-			int freeNodeConnector = getRandomFreeConnector(freeNode);
-			Position nextPosition = freeNode.getConnectorPosition(freeNodeConnector);
-			if (isPositionFreeToConnect(nextPosition)) {
-				interconnectNodes(freeNode, nextNode, freeNodeConnector); 
-			}
-			else {
-				closeInvalidConnector(freeNode, freeNodeConnector);
-				throw new ConnectionException();
-			}
-		} catch (ClosedNodeException e) {
+		int freeNodeConnector = getRandomFreeConnector(freeNode);
+		Position nextPosition = freeNode.getConnectorPosition(freeNodeConnector);
+		if (isPositionFreeToConnect(nextPosition)) {
+			interconnectNodes(freeNode, nextNode, freeNodeConnector); 
+		}
+		else {
+			closeInvalidConnector(freeNode, freeNodeConnector);
 			throw new ConnectionException();
 		}
 	}
 	
-	private int getRandomFreeConnector(BasicNode node) throws ClosedNodeException {
-		if (isOpened(node)) {
-			Connector[] connectors = node.connectors();
-			int randomConnector;
-			do {
-				randomConnector = getRandomValue(connectors.length);
-			}
-			while ( !(connectors[randomConnector] instanceof UnconnectedConnector) );
-			return randomConnector;
+	private int getRandomFreeConnector(BasicNode node) {
+		Connector[] connectors = node.connectors();
+		int randomConnector;
+		do {
+			randomConnector = getRandomValue(connectors.length);
 		}
-		else {
-			throw new ClosedNodeException();
-		}
+		while ( !isReadyToConnect(connectors[randomConnector]) );
+		return randomConnector;
 	}
 	
-	private boolean isOpened(BasicNode node) {
+	private boolean isConnectable(BasicNode node) {
 		for (Connector connector : node.connectors()) {
 			if (connector instanceof UnconnectedConnector) {
 				return true;
 			}
 		}
 		return false;
+	}
+	
+	private boolean isReadyToConnect(Connector connector) {
+		return connector instanceof UnconnectedConnector;
 	}
 	
 	private int getRandomValue(int limit) {

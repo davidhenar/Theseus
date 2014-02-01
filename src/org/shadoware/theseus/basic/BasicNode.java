@@ -28,8 +28,8 @@ public class BasicNode implements Node {
 	
 	
 	public BasicNode() {
-		for (int i=0; i<connectors.length; i++) {
-			connectors[i] = new UnconnectedConnector();
+		for (int connector=0; connector<connectors.length; connector++) {
+			open(connector);
 		}
 	}
 	
@@ -43,32 +43,37 @@ public class BasicNode implements Node {
 		return 0;
 	}
 	
-	public Connector[] connectors() {
-		return connectors;
-	}
-
-	public Position position() {
-		return position;
+	public void connectNodeAt(BasicNode targetNode, int connector) {
+		int targetConnector = inverseConnector(connector);
+		connect(targetNode, connector);
+		allocate(targetNode.getConnectorPosition(targetConnector));
 	}
 	
-	public void connectNodeAt(Node node, int connector) {
-		connect(node, connector);
-		allocate(node, connector);
+	private void connect(Connector connector, int position) {
+		connectors[position] = connector;
+	}
+	
+	private void allocate(Position position) {
+		this.position = new Position(position.getX(), position.getY());
 	}
 	
 	public void closeAllUnconnected() {
-		for (int i=0; i<connectors.length; i++) {
-			if (connectors[i] instanceof UnconnectedConnector) {
-				connectors[i] = new ClosedConnector();
+		for (int connector=0; connector<connectors.length; connector++) {
+			if (connectors[connector] instanceof UnconnectedConnector) {
+				close(connector);
 			}
 		} 
 	}
 	
-	public void close(int connector) {
+	protected void open(int connector) {
+		connectors[connector] = new UnconnectedConnector();
+	}
+	
+	protected void close(int connector) {
 		connectors[connector] = new ClosedConnector(); 
 	}
 	
-	public Position getConnectorPosition(int connector) {
+	protected Position getConnectorPosition(int connector) {
 		int x = position.getX();
 		int y = position.getY();
 		switch (connector) {
@@ -80,39 +85,11 @@ public class BasicNode implements Node {
 		return new Position(x, y);
 	}
 	
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		for (Connector connector : connectors) {
-			sb.append(connector.toString());
-			sb.append(", ");
-		}
-		sb.append("(");
-		sb.append(position.toString());
-		sb.append(")");
-		return sb.toString();
+	public Connector[] connectors() {
+		return connectors;
 	}
-	
-	private void connect(Connector connector, int position) {
-		connectors[position] = connector;
-	}
-	
-	private void allocate(Node node, int connector) {
-		Position increment = getConnectingPositionIncrement(connector);
-		int x = node.position().getX() + increment.getX();
-		int y = node.position().getY() + increment.getY();
-		position = new Position(x, y);
-	}
-	
-	private Position getConnectingPositionIncrement(int connector) {
-		int x = 0;
-		int y = 0;
-		switch (connector) {
-			case UP_CONNECTOR: y--; break;
-			case DOWN_CONNECTOR: y++; break;
-			case RIGHT_CONNECTOR: x--; break;
-			case LEFT_CONNECTOR: x++; break;
-		}
-		return new Position(x, y);
+
+	public Position position() {
+		return position;
 	}
 }
